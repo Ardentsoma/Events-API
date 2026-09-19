@@ -3,3 +3,6 @@ dist/
 .env
 .DS_Store
 *.log
+postman/
+.postman/
+abuja-venues-raw.json
