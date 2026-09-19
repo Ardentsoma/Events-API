@@ -1,0 +1,80 @@
+// Prisma schema for the Abuja events & ticketing API.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  upcoming
+  ongoing
+  completed
+  cancelled
+}
+
+enum TicketStatus {
+  reserved
+  confirmed
+  cancelled
+}
+
+// A venue hosts many events. name + area form a stable natural key used by
+// the seed script for idempotent upserts.
+model Venue {
+  id          String    @id @default(cuid())
+  name        String
+  address     String
+  area        String
+  capacity    Int?
+  contactInfo String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  events      Event[]
+
+  @@unique([name, area])
+  @@index([area])
+}
+
+// An event belongs to exactly one venue and sells many tickets.
+model Event {
+  id               String      @id @default(cuid())
+  title            String
+  description      String?
+  category         String
+  venueId          String
+  venue            Venue       @relation(fields: [venueId], references: [id])
+  startTime        DateTime
+  endTime          DateTime
+  ticketPriceMinor Int
+  currency         String      @default("NGN")
+  capacity         Int
+  status           EventStatus @default(upcoming)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  tickets          Ticket[]
+
+  @@index([venueId])
+  @@index([category])
+  @@index([status])
+  @@index([startTime])
+}
+
+// Attendee details live directly on the ticket (no separate Customer model).
+model Ticket {
+  id            String       @id @default(cuid())
+  eventId       String
+  event         Event        @relation(fields: [eventId], references: [id])
+  attendeeName  String
+  attendeeEmail String
+  quantity      Int
+  status        TicketStatus @default(reserved)
+  purchasedAt   DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([eventId])
+}

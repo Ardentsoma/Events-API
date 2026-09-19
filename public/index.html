@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abuja Events — Live API Consumer</title>
+  <style>
+    :root {
+      --bg: #f4f2ee;
+      --card: #ffffff;
+      --ink: #1c1917;
+      --muted: #78716c;
+      --accent: #b45309;
+      --border: #e7e5e4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+    }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    header p { margin: 0.25rem 0 0; color: #d6d3d1; font-size: 0.9rem; }
+    main { max-width: 800px; margin: 1.5rem auto; padding: 0 1.5rem; }
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .filter {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--ink);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .event {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    .event h2 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+    .event .category {
+      display: inline-block;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .event .row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .event .meta { color: var(--muted); font-size: 0.85rem; }
+    .event .price { font-weight: 600; white-space: nowrap; }
+    .status {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .status.upcoming, .status.ongoing { color: #166534; border-color: #bbf7d0; background: #f0fdf4; }
+    .status.cancelled { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+    .status.completed { color: var(--muted); }
+    .pagination { display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.25rem; }
+    button.btn {
+      background: var(--ink);
+      color: #fff;
+      border: 0;
+      border-radius: 6px;
+      padding: 0.55rem 1.25rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    button.btn:disabled { opacity: 0.4; cursor: default; }
+    .empty, .error { text-align: center; color: var(--muted); padding: 2rem 0; }
+    .error { color: #b91c1c; }
+    .loading { text-align: center; color: var(--muted); padding: 2rem 0; }
+    .count { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Abuja Events</h1>
+    <p>Live consumer of the Events API — <code>/api/v1/events</code></p>
+  </header>
+
+  <main>
+    <div class="filters" id="filters" role="group" aria-label="Category filter"></div>
+    <div class="count" id="count"></div>
+    <div id="list">
+      <div class="loading">Loading events…</div>
+    </div>
+    <div class="pagination">
+      <button class="btn" id="prev" disabled>Previous</button>
+      <button class="btn" id="next">Next page</button>
+    </div>
+  </main>
+
+  <script>
+    // API base URL. Served from the same host; override if consuming a remote API.
+    const API_BASE = '/api/v1';
+
+    const CATEGORIES = ['concert', 'comedy', 'meetup', 'market', 'all'];
+    const PAGE_SIZE = 20;
+
+    const state = { category: 'all', offset: 0, total: 0, hasMore: false };
+
+    const listEl = document.getElementById('list');
+    const countEl = document.getElementById('count');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const filtersEl = document.getElementById('filters');
+
+    const fmtPrice = (minor) =>
+      '₦' + (minor / 100).toLocaleString('en-NG', { maximumFractionDigits: 0 });
+
+    const fmtDate = (iso) =>
+      new Date(iso).toLocaleString('en-NG', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
+    const fmtMonthDay = (iso) =>
+      new Date(iso).toLocaleString('en-NG', { month: 'short', day: 'numeric' });
+
+    function renderFilters() {
+      filtersEl.innerHTML = '';
+      for (const cat of CATEGORIES) {
+        const btn = document.createElement('button');
+        btn.className = 'filter' + (cat === state.category ? ' active' : '');
+        btn.textContent = cat === 'all' ? 'All' : cat[0].toUpperCase() + cat.slice(1);
+        btn.dataset.category = cat;
+        btn.addEventListener('click', () => {
+          state.category = cat;
+          state.offset = 0;
+          renderFilters();
+          load();
+        });
+        filtersEl.appendChild(btn);
+      }
+    }
+
+    function renderEvents(events) {
+      if (!events.length) {
+        listEl.innerHTML = '<div class="empty">No events found.</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      for (const evt of events) {
+        const card = document.createElement('article');
+        card.className = 'event';
+
+        const endBlock =
+          evt.endTime === evt.startTime ? '' :
+          ' &ndash; ' + fmtDate(evt.endTime);
+
+        card.innerHTML = `
+          <span class="category">${evt.category}</span>
+          <h2>${evt.title}</h2>
+          <div class="row">
+            <span class="meta">${fmtDate(evt.startTime)}${endBlock}</span>
+            <span class="price">${fmtPrice(evt.ticketPriceMinor)}</span>
+          </div>
+          <div class="row">
+            <span class="meta">Capacity ${evt.capacity.toLocaleString('en-NG')}</span>
+            <span class="status ${evt.status}">${evt.status}</span>
+          </div>
+        `;
+        listEl.appendChild(card);
+      }
+    }
+
+    async function load() {
+      listEl.innerHTML = '<div class="loading">Loading events…</div>';
+      nextBtn.disabled = true;
+      prevBtn.disabled = true;
+
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(state.offset),
+        sort: 'startTime',
+        order: 'asc',
+      });
+      if (state.category !== 'all') params.set('category', state.category);
+
+      try {
+        const res = await fetch(`${API_BASE}/events?${params.toString()}`);
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const { data, meta } = await res.json();
+
+        state.total = meta.total;
+        state.hasMore = meta.hasMore;
+
+        countEl.textContent = `${state.total} event${state.total === 1 ? '' : 's'} found`;
+        renderEvents(data);
+        nextBtn.disabled = !meta.hasMore;
+        prevBtn.disabled = state.offset === 0;
+      } catch (err) {
+        listEl.innerHTML = `<div class="error">Failed to load events: ${err.message}</div>`;
+        countEl.textContent = '';
+      }
+    }
+
+    prevBtn.addEventListener('click', () => {
+      state.offset = Math.max(0, state.offset - PAGE_SIZE);
+      load();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      state.offset += PAGE_SIZE;
+      load();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    renderFilters();
+    load();
+  </script>
+</body>
+</html>
