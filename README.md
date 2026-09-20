@@ -162,8 +162,6 @@ scripts/
 venues-seed.json            # generated venue data consumed by the seed
 docs/
   venue-data-from-osm.md    # how to pull venue data from OSM
-consumer.html                # Events Browser — discovery consumer
-checkin.html                 # Event Ticket Checker — door check-in consumer
 ```
 
 ---
