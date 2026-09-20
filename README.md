@@ -6,20 +6,24 @@ platform — it exposes Venue, Event and Ticket data for other tools to consume
 (for example, an events aggregator doing discovery, or a door check-in tool
 pulling a guest list).
 
+**Live API:** https://events-api-a9et.onrender.com/api/v1
+
 - **Runtime:** Node.js + TypeScript, Express
-- **Database:** PostgreSQL
+- **Database:** PostgreSQL (hosted on Neon in production)
 - **ORM:** Prisma
 - **Validation:** Zod
 - **Rate limiting:** express-rate-limit (in-memory)
 - **IDs:** cuid2 (`@paralleldrive/cuid2`)
 
-Base URL: `http://localhost:3000/api/v1`
+Local base URL: `http://localhost:3000/api/v1`
+Live base URL: `https://events-api-a9et.onrender.com/api/v1`
 
 ---
 
 ## Contents
 
 - [Getting started](#getting-started)
+- [Deployment](#deployment)
 - [Project structure](#project-structure)
 - [Data model](#data-model)
 - [Conventions](#conventions)
@@ -31,17 +35,20 @@ Base URL: `http://localhost:3000/api/v1`
 - [Rate limiting](#rate-limiting)
 - [Validation](#validation)
 - [Seeding and OSM venue data](#seeding-and-osm-venue-data)
-- [Consumer page](#consumer-page)
+- [Consumer apps](#consumer-apps)
 - [Design decisions](#design-decisions)
 
 ---
 
 ## Getting started
 
+Use this section for running the API locally. See [Deployment](#deployment)
+for how the live version is actually hosted.
+
 ### Prerequisites
 
 - Node.js 18+ (developed on Node 24)
-- PostgreSQL running locally
+- PostgreSQL running locally, or a connection string to a hosted instance (Neon, Render, etc.)
 
 ### 1. Install dependencies
 
@@ -49,13 +56,13 @@ Base URL: `http://localhost:3000/api/v1`
 npm install
 ```
 
-### 2. Create the database and configure `.env`
+### 2. Configure `.env`
+
+For local Postgres:
 
 ```bash
 createdb event_api
 ```
-
-`.env` (already present, adjust the user if needed):
 
 ```env
 DATABASE_URL="postgresql://mac@localhost:5432/event_api"
@@ -63,6 +70,9 @@ PORT=3000
 # Optional: override the rate limit (default 100)
 # RATE_LIMIT_MAX=100
 ```
+
+To point at the same Neon database the live API uses instead of a local one,
+replace `DATABASE_URL` with the Neon connection string (see [Deployment](#deployment)).
 
 ### 3. Apply migrations and generate the Prisma client
 
@@ -93,6 +103,23 @@ npm run build && npm start
 ```
 
 Server: `http://localhost:3000/api/v1`
+
+---
+
+## Deployment
+
+The API is deployed as a Render **Web Service**, backed by a **Neon**
+Postgres database rather than Render's own managed Postgres, to avoid the
+30-day expiry on Render's free database tier.
+
+- **Build command:** `npm install && npx prisma generate && npm run build && npx prisma migrate deploy`
+- **Start command:** `npm start` (runs `node dist/src/index.js`)
+- **Environment variables:** `DATABASE_URL` set to the Neon connection string, plus any values from `.env.example`
+- **Database:** provisioned on Neon, migrated and seeded against production using the same `prisma migrate deploy` / `npm run seed` commands as local, pointed at the Neon connection string
+
+Because the web service and the database are hosted separately, the API's
+public URL is unaffected by anything happening on the database side (plan
+changes, migrations to a different provider, etc.).
 
 ---
 
@@ -135,6 +162,8 @@ scripts/
 venues-seed.json            # generated venue data consumed by the seed
 docs/
   venue-data-from-osm.md    # how to pull venue data from OSM
+consumer.html                # Events Browser — discovery consumer
+checkin.html                 # Event Ticket Checker — door check-in consumer
 ```
 
 ---
@@ -208,6 +237,9 @@ Allowed sort fields:
 
 ## Endpoints
 
+All example commands below use the **live** URL. Swap in
+`http://localhost:3000/api/v1` to test against a local instance instead.
+
 ### Venues
 
 #### `GET /venues`
@@ -230,7 +262,7 @@ List venues. Paginated; filterable by `area` and capacity range; sortable by
 **Example**
 
 ```bash
-curl "http://localhost:3000/api/v1/venues?area=Abuja&limit=2&sort=name"
+curl "https://events-api-a9et.onrender.com/api/v1/venues?area=Abuja&limit=2&sort=name"
 ```
 
 **Example response**
@@ -268,7 +300,7 @@ curl "http://localhost:3000/api/v1/venues?area=Abuja&limit=2&sort=name"
 Fetch a single venue. `404 VENUE_NOT_FOUND` if it does not exist.
 
 ```bash
-curl "http://localhost:3000/api/v1/venues/js3ng78spqktgf9jdyf9xrz0"
+curl "https://events-api-a9et.onrender.com/api/v1/venues/js3ng78spqktgf9jdyf9xrz0"
 ```
 
 ```json
@@ -292,7 +324,7 @@ All events at a venue. Paginated and sortable (`startTime`,
 `ticketPriceMinor`, `createdAt`); returns `404` if the venue does not exist.
 
 ```bash
-curl "http://localhost:3000/api/v1/venues/vpwga6oseqef93w0l8bhkn94/events?limit=1&sort=ticketPriceMinor&order=desc"
+curl "https://events-api-a9et.onrender.com/api/v1/venues/vpwga6oseqef93w0l8bhkn94/events?limit=1&sort=ticketPriceMinor&order=desc"
 ```
 
 ```json
@@ -347,7 +379,7 @@ date range and price range; sortable by `startTime`, `ticketPriceMinor` or
 **Example**
 
 ```bash
-curl "http://localhost:3000/api/v1/events?status=upcoming&sort=startTime&order=asc&limit=1"
+curl "https://events-api-a9et.onrender.com/api/v1/events?status=upcoming&sort=startTime&order=asc&limit=1"
 ```
 
 **Example response**
@@ -380,7 +412,7 @@ curl "http://localhost:3000/api/v1/events?status=upcoming&sort=startTime&order=a
 Fetch a single event. `404 EVENT_NOT_FOUND` if missing.
 
 ```bash
-curl "http://localhost:3000/api/v1/events/t3htjtumc053h1misung4ia8"
+curl "https://events-api-a9et.onrender.com/api/v1/events/t3htjtumc053h1misung4ia8"
 ```
 
 Returns the same event object as above under `data`.
@@ -391,7 +423,7 @@ All tickets for an event (guest list). Paginated; sortable by `purchasedAt`
 or `createdAt`. `404 EVENT_NOT_FOUND` if the event does not exist.
 
 ```bash
-curl "http://localhost:3000/api/v1/events/i6vpqctx0deok1fm7ne6peza/tickets?limit=1"
+curl "https://events-api-a9et.onrender.com/api/v1/events/i6vpqctx0deok1fm7ne6peza/tickets?limit=1"
 ```
 
 ```json
@@ -434,7 +466,7 @@ exist. `422` if `endTime` is not after `startTime`.
 | `status`           | string  | no       | default `upcoming`                       |
 
 ```bash
-curl -X POST "http://localhost:3000/api/v1/events" \
+curl -X POST "https://events-api-a9et.onrender.com/api/v1/events" \
   -H 'Content-Type: application/json' \
   -d '{
     "title": "Abuja Jazz Night",
@@ -477,7 +509,7 @@ Partial update. Any subset of the event fields; `404` if missing. If both
 `startTime`. Returns the updated event.
 
 ```bash
-curl -X PATCH "http://localhost:3000/api/v1/events/dvpq5r0n6s7c8x9w2y3z4a5b" \
+curl -X PATCH "https://events-api-a9et.onrender.com/api/v1/events/dvpq5r0n6s7c8x9w2y3z4a5b" \
   -H 'Content-Type: application/json' \
   -d '{ "capacity": 350, "endTime": "2026-12-01T22:00:00.000Z" }'
 ```
@@ -504,7 +536,7 @@ Remove an event. Its tickets are deleted first inside a transaction
 (Prisma's FK would otherwise block the delete). `404` if missing.
 
 ```bash
-curl -X DELETE "http://localhost:3000/api/v1/events/dvpq5r0n6s7c8x9w2y3z4a5b"
+curl -X DELETE "https://events-api-a9et.onrender.com/api/v1/events/dvpq5r0n6s7c8x9w2y3z4a5b"
 ```
 
 ```json
@@ -522,7 +554,7 @@ Create a ticket. Returns `201`.
 **Body**
 
 | Field           | Type    | Required | Notes                                        |
-| --------------- | ------- | -------- | -------------------------------------------- |
+| --------------- | ------- | -------- | --------------------------------------------- |
 | `eventId`       | string  | yes      | must reference an existing event             |
 | `attendeeName`  | string  | yes      |                                              |
 | `attendeeEmail` | string  | yes      | must be a valid email address                |
@@ -535,7 +567,7 @@ is rejected with `422 CAPACITY_EXCEEDED`. `404 EVENT_NOT_FOUND` if the event
 doesn't exist.
 
 ```bash
-curl -X POST "http://localhost:3000/api/v1/tickets" \
+curl -X POST "https://events-api-a9et.onrender.com/api/v1/tickets" \
   -H 'Content-Type: application/json' \
   -d '{
     "eventId": "t3htjtumc053h1misung4ia8",
@@ -579,7 +611,7 @@ curl -X POST "http://localhost:3000/api/v1/tickets" \
 Fetch a single ticket. `404 TICKET_NOT_FOUND` if missing.
 
 ```bash
-curl "http://localhost:3000/api/v1/tickets/a1b2c3d4e5f6g7h8i9j0k1l2"
+curl "https://events-api-a9et.onrender.com/api/v1/tickets/a1b2c3d4e5f6g7h8i9j0k1l2"
 ```
 
 ```json
@@ -604,7 +636,7 @@ Update **status only** (e.g. cancel a ticket). The body accepts only `status`;
 any other field is rejected with `422` naming that field.
 
 ```bash
-curl -X PATCH "http://localhost:3000/api/v1/tickets/a1b2c3d4e5f6g7h8i9j0k1l2" \
+curl -X PATCH "https://events-api-a9et.onrender.com/api/v1/tickets/a1b2c3d4e5f6g7h8i9j0k1l2" \
   -H 'Content-Type: application/json' \
   -d '{ "status": "cancelled" }'
 ```
@@ -673,6 +705,8 @@ Retry-After: 58
 > In-memory means the counter is per-process and resets on restart, and is not
 > shared across multiple instances. That is intentional for this assessment;
 > a production deployment behind several instances would use a shared store.
+> Since this API runs as a single Render instance, this limitation doesn't
+> currently apply in practice.
 
 ---
 
@@ -704,14 +738,17 @@ logic lives separately in `src/services/`.
   `npm run seed` repeatedly yields the same rows.
 - Seeded events never exceed their own capacity (the capacity rule is respected
   at generation time too).
+- Against production, the seed is run against the Neon connection string
+  directly (see [Deployment](#deployment)).
 
 ---
 
-## Consumer page
+## Consumer app
 
-A single-page consumer (`public/index.html`) calls the live API, lists events
-with a category filter and a "next page" button. See the file for the API base
-URL configuration.
+An event ticket & attendee checker, It is used to check people who bought tickets for all events happening in Abuja (regardless of
+sector) or for a single event, using live data from the **API**
+(`https://events-api-a9et.onrender.com/api/v1`). Features attendee verification,
+ticket quantities, check-in stats, CSV export, and cross-event attendee lookup.
 
 ---
 
@@ -775,8 +812,8 @@ a privacy leak.
 
 This is a **deliberate scope decision, not an oversight**: the brief
 explicitly excludes authentication, and the intended consumer of the guest
-list (a door check-in tool) genuinely needs attendee names to manage entry.
-A production version would:
+list, the Event Ticket Checker, genuinely needs attendee names to manage
+entry. A production version would:
 
 1. require authentication, and
 2. restrict `GET /events/:id/tickets` to the **organizer who owns the event**
