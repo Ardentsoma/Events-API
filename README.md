@@ -820,3 +820,23 @@ entry. A production version would:
 
 Until then, treat this API as an internal/information layer rather than a
 public endpoint.
+
+## Picture Evidence
+### 1. Curl hitting the live URL without adding limit
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 04" src="https://github.com/user-attachments/assets/f9e39812-c714-4758-8b73-d41a839b0df3" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 17" src="https://github.com/user-attachments/assets/0b97e54d-8f86-47a3-9027-d35cc0e59b5b" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 27" src="https://github.com/user-attachments/assets/1d0a1ae9-baf6-48d8-8c78-193cd81faadb" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 37" src="https://github.com/user-attachments/assets/f045a863-079e-41d4-a1cf-5ed01ab51489" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 49" src="https://github.com/user-attachments/assets/7ab3888f-0876-42c9-9356-f4b9e8b4c288" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 14 57" src="https://github.com/user-attachments/assets/1a2e3bce-c544-4f7d-ad19-d5ea1857cd84" />
+
+### 2. Curl hitting the live URL  limit and Offset
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 21 42" src="https://github.com/user-attachments/assets/7a009997-c2b1-4412-995c-e897e1470c8c" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 22 10" src="https://github.com/user-attachments/assets/1dcb60d4-a5d8-4a94-a90f-d45aec44c9d3" />
+<img width="2880" height="1013" alt="F44F936C-3BBD-4A92-A922-6B4B274573FF_1_201_a" src="https://github.com/user-attachments/assets/820c2631-a3cf-492f-baa1-8ff347231af2" />
+
+
+### 4. A consumer using the API
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 46 09" src="https://github.com/user-attachments/assets/46339e36-8268-4161-8f4c-d70f6322667d" />
+<img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 46 16" src="https://github.com/user-attachments/assets/a90fbc39-21da-4f47-8d13-2d53a3c3820e" />
+
