@@ -35,7 +35,7 @@ Live base URL: `https://events-api-a9et.onrender.com`
 - [Rate limiting](#rate-limiting)
 - [Validation](#validation)
 - [Seeding and OSM venue data](#seeding-and-osm-venue-data)
-- [Consumer apps](#consumer-apps)
+- [Consumer app](#consumer-app)
 - [Design decisions](#design-decisions)
 
 ---
