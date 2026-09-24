@@ -835,6 +835,12 @@ public endpoint.
 <img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 22 10" src="https://github.com/user-attachments/assets/1dcb60d4-a5d8-4a94-a90f-d45aec44c9d3" />
 <img width="2880" height="1013" alt="F44F936C-3BBD-4A92-A922-6B4B274573FF_1_201_a" src="https://github.com/user-attachments/assets/820c2631-a3cf-492f-baa1-8ff347231af2" />
 
+### 3. Rate limiting test
+<img width="1440" height="900" alt="Screenshot 2026-09-19 at 03 26 15" src="https://github.com/user-attachments/assets/cf671fe8-18e8-40c3-a142-ba8aa6e4d0b9" />
+<img width="1440" height="900" alt="Screenshot 2026-09-19 at 03 26 10" src="https://github.com/user-attachments/assets/409db339-5559-48eb-8552-c03b3a9ef7e2" />
+<img width="1440" height="900" alt="Screenshot 2026-09-19 at 03 26 02" src="https://github.com/user-attachments/assets/cbd57b38-c9ec-498f-bf10-5a27ecafbb31" />
+
+
 
 ### 4. A consumer using the API
 <img width="1440" height="900" alt="Screenshot 2026-09-23 at 16 46 09" src="https://github.com/user-attachments/assets/46339e36-8268-4161-8f4c-d70f6322667d" />
