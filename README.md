@@ -6,7 +6,7 @@ platform — it exposes Venue, Event and Ticket data for other tools to consume
 (for example, an events aggregator doing discovery, or a door check-in tool
 pulling a guest list).
 
-**Live API:** https://events-api-a9et.onrender.com/api/v1
+**Live API:** https://events-api-a9et.onrender.com/
 
 - **Runtime:** Node.js + TypeScript, Express
 - **Database:** PostgreSQL (hosted on Neon in production)
@@ -16,7 +16,7 @@ pulling a guest list).
 - **IDs:** cuid2 (`@paralleldrive/cuid2`)
 
 Local base URL: `http://localhost:3000/api/v1`
-Live base URL: `https://events-api-a9et.onrender.com/api/v1`
+Live base URL: `https://events-api-a9et.onrender.com`
 
 ---
 
